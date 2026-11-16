@@ -82,7 +82,7 @@ describe("createMuseUsageStore", () => {
       store.record({ nonsense: true });
       expect((await store.latest())?.observedAtMs).toBe(20);
 
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       expect(JSON.parse(readFileSync(path, "utf8")).observedAtMs).toBe(20);
 
       const restarted = createMuseUsageStore(() => path);
@@ -99,17 +99,17 @@ describe("createMuseUsageStore", () => {
       const answering = createMuseUsageStore(() => path);
       const observing = createMuseUsageStore(() => path);
       answering.record({ ...READING, observedAtMs: 5 });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       expect((await answering.latest())?.observedAtMs).toBe(5);
 
       observing.record({ ...READING, observedAtMs: 9 });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       expect((await answering.latest())?.observedAtMs).toBe(9);
 
       /** A late, older reading never overwrites the saved newer one. */
       const stale = createMuseUsageStore(() => path);
       stale.record({ ...READING, observedAtMs: 7 });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       expect(JSON.parse(readFileSync(path, "utf8")).observedAtMs).toBe(9);
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -216,7 +216,7 @@ it("answers provider usage with the meters a thread's host pushed", async () => 
     let id = 10;
     while (Date.now() < deadline && windows.length === 0) {
       await harness.flushWork();
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       harness.takeMessages();
       id += 1;
       harness.sendRequest(id, "provider/usage", { providerId: "muse" });

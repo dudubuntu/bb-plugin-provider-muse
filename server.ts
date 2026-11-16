@@ -9,6 +9,7 @@ import {
   museExtensionKinds,
   type MuseProviderOptions,
 } from "./src/vocabulary.js";
+import { registerMuseUsageSource } from "./src/usage-rpc.js";
 
 /**
  * Settings values arrive as strings, and a budget is easier to paste as
@@ -122,4 +123,6 @@ export default function plugin(bb: BbPluginApi) {
       };
     },
   });
+
+  registerMuseUsageSource(bb);
 }

@@ -471,12 +471,27 @@ describe("turn failure classification", () => {
     error: { kind: "modelError", message, retryable: false },
   });
 
-  it("asks for a fresh session when upstream model route or session is lost", async () => {
+  it("does not rerun a model the upstream no longer serves", async () => {
     const { classifyTurnFailure } = await import("../src/recovery.js");
     const classified = classifyTurnFailure(
       failed(
         "model `muse-ember-1.0` does not exist or you lack access [request_id=dde786a0-e6b8-40a0-ae74-c1debbb983df]",
       ),
+    );
+    expect(classified.restart).toMatchObject({ fresh: true });
+    /**
+     * A fresh session cannot restore a model the upstream dropped mid-turn:
+     * live, the rerun failed identically within seconds. The turn stays
+     * failed so bb's retry policy (model-fallback switches model) owns it.
+     */
+    expect(classified.rerun).toBe(false);
+    expect(classified.hint).toBeNull();
+  });
+
+  it("still reruns a bare 404 route loss", async () => {
+    const { classifyTurnFailure } = await import("../src/recovery.js");
+    const classified = classifyTurnFailure(
+      failed("provider returned 404 for this session"),
     );
     expect(classified.restart).toMatchObject({ fresh: true });
     expect(classified.rerun).toBe(true);
@@ -604,6 +619,16 @@ describe("error classification", () => {
       "connection-failed",
     );
     expect(category("step budget reached", "stepLimit")).toBe("max-turns");
+    /**
+     * The model comes from bb's own catalog, never free text, so "no such
+     * model" is a lost upstream route — switchable, not a bad request.
+     */
+    expect(
+      category(
+        "model `muse-ember-1.0` does not exist or you lack access",
+        "modelError",
+      ),
+    ).toBe("unknown");
     expect(
       category("provider-private history is incompatible", "projectionError"),
     ).toBe("internal");

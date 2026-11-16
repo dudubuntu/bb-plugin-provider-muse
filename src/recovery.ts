@@ -23,8 +23,16 @@ const INCOMPATIBLE_HISTORY_PATTERN =
  * not there, and hides the one thing that stops it recurring.
  */
 const RETAINED_MEDIA_PATTERN = /retained media history is unsupported/i;
-const ROUTE_OR_MODEL_LOST_PATTERN =
-  /model `.*` does not exist or you lack access|model_not_found|ModelNotFound|\b404\b/i;
+const ROUTE_LOST_PATTERN = /\b404\b/i;
+/**
+ * The upstream dropped the model itself mid-turn. A fresh session re-resolves
+ * the same catalog name against the same upstream, so the rerun fails
+ * identically — live, within seconds. Only a model switch helps, which is
+ * bb's retry policy's job: the turn stays failed (no rerun), and the fresh
+ * restart lets the next turn re-resolve the route.
+ */
+const MODEL_LOST_PATTERN =
+  /model `.*` does not exist or you lack access|model_not_found|ModelNotFound/i;
 
 export interface TurnFailureClassification {
   /** A rebuild is owed before the next turn. */
@@ -83,7 +91,19 @@ export function classifyTurnFailure(
     };
   }
 
-  if (ROUTE_OR_MODEL_LOST_PATTERN.test(message)) {
+  if (MODEL_LOST_PATTERN.test(message)) {
+    return {
+      restart: {
+        reason:
+          "Muse upstream model route or session was lost, so bb started a fresh session",
+        fresh: true,
+      },
+      rerun: false,
+      hint: null,
+    };
+  }
+
+  if (ROUTE_LOST_PATTERN.test(message)) {
     return {
       restart: {
         reason:

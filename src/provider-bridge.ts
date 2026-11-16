@@ -657,6 +657,16 @@ async function constructRuntime(args: {
     runtime.museHome = info.museHome;
     runtime.serverVersion = info.serverVersion;
 
+    try {
+      await connection.request({
+        method: MSP_METHODS.modelList,
+        resultSchema: mspModelListResultSchema,
+        timeoutMs: HANDSHAKE_TIMEOUT_MS,
+      });
+    } catch {
+      /** A failed catalog warm-up must not block opening a session. */
+    }
+
     const session = await openSession({
       connection,
       construction,

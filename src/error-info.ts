@@ -34,8 +34,13 @@ const STREAM_PATTERN =
   /stream (?:disconnected|closed|ended|interrupted)|incomplete chunked|unexpected end of stream/i;
 const INTERNAL_PATTERN =
   /\b(?:500|502|504)\b|internal server error|bad gateway|gateway timeout/i;
+/**
+ * Model existence is deliberately absent here: bb sends only catalog-
+ * validated names, so "no such model" is a lost upstream route — `unknown`,
+ * which bb's retry policy treats as switchable — not a caller typo.
+ */
 const BAD_REQUEST_PATTERN =
-  /\b40[04]\b|invalid request|unsupported (?:model|parameter)|unknown model|does not exist or you lack access|model_not_found/i;
+  /\b40[04]\b|invalid request|unsupported (?:model|parameter)/i;
 
 /**
  * Only a status the message names as one. `429` beside the word `status` or
